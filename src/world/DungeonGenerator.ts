@@ -125,27 +125,44 @@ export class DungeonGenerator {
       }
     }
 
-    // 2. Connect rooms with corridors
+    // 2. Connect rooms with corridors (always at least 3 squares wide)
+    const carveCorridorTile = (x: number, y: number) => {
+      if (x >= 2 && x < width - 2 && y >= 2 && y < height - 2) {
+        tiles[y][x] = TileType.FLOOR;
+        if (!floorVariants[y][x] || floorVariants[y][x] === 'tile_floor_stone') {
+          floorVariants[y][x] = Math.random() < 0.12 ? 'tile_floor_cracked' : 'tile_floor_stone';
+        }
+      }
+    };
+
+    const connectRooms = (rA: Room, rB: Room) => {
+      const minX = Math.min(rA.centerX, rB.centerX);
+      const maxX = Math.max(rA.centerX, rB.centerX);
+      const minY = Math.min(rA.centerY, rB.centerY);
+      const maxY = Math.max(rA.centerY, rB.centerY);
+
+      // Horizontal corridor (at least 3 squares wide vertically: cy-1, cy, cy+1)
+      for (let x = minX; x <= maxX; x++) {
+        carveCorridorTile(x, rA.centerY - 1);
+        carveCorridorTile(x, rA.centerY);
+        carveCorridorTile(x, rA.centerY + 1);
+      }
+
+      // Vertical corridor (at least 3 squares wide horizontally: cx-1, cx, cx+1)
+      for (let y = minY; y <= maxY; y++) {
+        carveCorridorTile(rB.centerX - 1, y);
+        carveCorridorTile(rB.centerX, y);
+        carveCorridorTile(rB.centerX + 1, y);
+      }
+    };
+
     for (let i = 0; i < rooms.length - 1; i++) {
-      const rA = rooms[i];
-      const rB = rooms[i + 1];
+      connectRooms(rooms[i], rooms[i + 1]);
+    }
 
-      let cx = rA.centerX;
-      let cy = rA.centerY;
-      const targetX = rB.centerX;
-      const targetY = rB.centerY;
-
-      // Horizontal first, then vertical
-      while (cx !== targetX) {
-        tiles[cy][cx] = TileType.FLOOR;
-        tiles[cy + 1][cx] = TileType.FLOOR; // 2-wide corridor
-        cx += cx < targetX ? 1 : -1;
-      }
-      while (cy !== targetY) {
-        tiles[cy][cx] = TileType.FLOOR;
-        tiles[cy][cx + 1] = TileType.FLOOR;
-        cy += cy < targetY ? 1 : -1;
-      }
+    // Optional loop connection to create sprawling gothic layouts
+    if (rooms.length >= 4) {
+      connectRooms(rooms[0], rooms[Math.floor(rooms.length / 2)]);
     }
 
     // 3. Wall autotiling & boundary walls
