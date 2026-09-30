@@ -8,6 +8,7 @@ export class InventoryView {
   public readonly container: Container;
   public isVisible: boolean = false;
   public onDropItem?: (item: Item) => void;
+  public onUseScroll?: (item: Item) => boolean;
 
   private player: Player;
   private onSound?: (key: string) => void;
@@ -287,6 +288,14 @@ export class InventoryView {
         this.onSound?.('potion_gulp');
         this.refresh();
         return;
+      }
+
+      if (existing.type === ItemType.SCROLL) {
+        if (this.onUseScroll && this.onUseScroll(existing)) {
+          this.player.inventory.removeItem(existing.id);
+          this.refresh();
+          return;
+        }
       }
 
       // Quick-equip to paperdoll

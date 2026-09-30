@@ -184,6 +184,83 @@ export class AssetFactory {
 
       this.storeTexture('tile_floor_blood', canvas);
     }
+
+    // 5. Tristram Grass Tile (Lush dark green with blade highlights)
+    {
+      const canvas = document.createElement('canvas');
+      canvas.width = W;
+      canvas.height = H;
+      const ctx = canvas.getContext('2d')!;
+
+      ctx.beginPath();
+      ctx.moveTo(W / 2, 0);
+      ctx.lineTo(W, H / 2);
+      ctx.lineTo(W / 2, H);
+      ctx.lineTo(0, H / 2);
+      ctx.closePath();
+      ctx.fillStyle = '#1e381b';
+      ctx.fill();
+      ctx.strokeStyle = '#132411';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Earthy undertones
+      ctx.fillStyle = '#172c14';
+      ctx.beginPath();
+      ctx.ellipse(W / 2 - 4, H / 2 + 2, 14, 6, -0.1, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Grass blade flecks
+      ctx.fillStyle = '#2f592a';
+      ctx.fillRect(W / 2 - 10, H / 2 - 4, 2, 3);
+      ctx.fillRect(W / 2 - 2, H / 2 + 1, 2, 4);
+      ctx.fillRect(W / 2 + 8, H / 2 - 3, 2, 3);
+      ctx.fillRect(W / 2 + 4, H / 2 + 5, 2, 2);
+
+      // Soft clover / flower dot
+      ctx.fillStyle = '#427838';
+      ctx.fillRect(W / 2 - 14, H / 2 + 3, 2, 2);
+      ctx.fillRect(W / 2 + 12, H / 2 + 2, 2, 2);
+
+      this.storeTexture('tile_floor_grass', canvas);
+    }
+
+    // 6. Tristram Worn Dirt Road Tile
+    {
+      const canvas = document.createElement('canvas');
+      canvas.width = W;
+      canvas.height = H;
+      const ctx = canvas.getContext('2d')!;
+
+      ctx.beginPath();
+      ctx.moveTo(W / 2, 0);
+      ctx.lineTo(W, H / 2);
+      ctx.lineTo(W / 2, H);
+      ctx.lineTo(0, H / 2);
+      ctx.closePath();
+      ctx.fillStyle = '#382a1d';
+      ctx.fill();
+      ctx.strokeStyle = '#241a12';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Worn cart ruts & stone specks
+      ctx.fillStyle = '#4a3827';
+      ctx.beginPath();
+      ctx.ellipse(W / 2, H / 2, 18, 7, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#5c4632';
+      ctx.fillRect(W / 2 - 8, H / 2 - 2, 4, 2);
+      ctx.fillRect(W / 2 + 4, H / 2 + 1, 5, 2);
+
+      // Pebbles
+      ctx.fillStyle = '#6e5f4e';
+      ctx.fillRect(W / 2 - 12, H / 2 + 2, 2, 1);
+      ctx.fillRect(W / 2 + 10, H / 2 - 4, 2, 2);
+
+      this.storeTexture('tile_floor_dirt', canvas);
+    }
   }
 
   // ==========================================
@@ -510,6 +587,43 @@ export class AssetFactory {
       this.storeTexture('prop_stairs_down', canvas);
     }
 
+    // 6b. Ascent Stairs (Stairs Up)
+    {
+      const canvas = document.createElement('canvas');
+      canvas.width = 64;
+      canvas.height = 48;
+      const ctx = canvas.getContext('2d')!;
+
+      // Ascending stone platform / steps
+      ctx.beginPath();
+      ctx.moveTo(32, 4);
+      ctx.lineTo(60, 18);
+      ctx.lineTo(32, 32);
+      ctx.lineTo(4, 18);
+      ctx.closePath();
+      ctx.fillStyle = '#22202b';
+      ctx.fill();
+
+      // Raised stone stairs leading up
+      const steps = [
+        { y: 24, w: 26, color: '#3f394d' },
+        { y: 18, w: 22, color: '#524b63' },
+        { y: 12, w: 18, color: '#685e7d' },
+        { y: 6, w: 14, color: '#8b7ea8' }
+      ];
+
+      for (const step of steps) {
+        ctx.fillStyle = step.color;
+        ctx.fillRect(32 - step.w / 2, step.y, step.w, 4);
+      }
+
+      ctx.strokeStyle = '#605670';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      this.storeTexture('prop_stairs_up', canvas);
+    }
+
     // 7. Town Portal Swirl
     {
       const canvas = document.createElement('canvas');
@@ -537,6 +651,298 @@ export class AssetFactory {
       ctx.fillRect(28, 40, 2, 2);
 
       this.storeTexture('prop_portal', canvas);
+    }
+
+    // 8. Deckard Cain (Elder Scholar with blue robe, white beard, and wooden staff)
+    {
+      const canvas = document.createElement('canvas');
+      canvas.width = 36;
+      canvas.height = 48;
+      const ctx = canvas.getContext('2d')!;
+
+      // Horadric wooden staff (behind body)
+      ctx.fillStyle = '#543b24';
+      ctx.fillRect(28, 12, 3, 34);
+      // Bronze orb on top of staff
+      ctx.fillStyle = '#d4af37';
+      ctx.beginPath();
+      ctx.arc(29, 10, 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Blue scholar robe
+      ctx.fillStyle = '#1c345c';
+      ctx.beginPath();
+      ctx.moveTo(12, 16);
+      ctx.lineTo(24, 16);
+      ctx.lineTo(27, 46);
+      ctx.lineTo(9, 46);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#101e36';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Leather belt & satchel
+      ctx.fillStyle = '#422812';
+      ctx.fillRect(11, 28, 14, 3);
+      ctx.fillStyle = '#5a3719';
+      ctx.fillRect(18, 30, 6, 6);
+
+      // Hooded Head
+      ctx.fillStyle = '#1c345c';
+      ctx.beginPath();
+      ctx.arc(18, 12, 7, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Face
+      ctx.fillStyle = '#d9aa82';
+      ctx.fillRect(15, 11, 6, 6);
+
+      // Long white/grey beard
+      ctx.fillStyle = '#e3e3e8';
+      ctx.beginPath();
+      ctx.moveTo(14, 15);
+      ctx.lineTo(22, 15);
+      ctx.lineTo(19, 26);
+      ctx.lineTo(17, 26);
+      ctx.closePath();
+      ctx.fill();
+
+      this.storeTexture('prop_cain', canvas);
+    }
+
+    // 9. Griswold the Blacksmith (Leather apron, iron anvil, smithing hammer)
+    {
+      const canvas = document.createElement('canvas');
+      canvas.width = 44;
+      canvas.height = 48;
+      const ctx = canvas.getContext('2d')!;
+
+      // Glowing coals / forge base (left side)
+      ctx.fillStyle = '#30180a';
+      ctx.fillRect(4, 36, 12, 10);
+      ctx.fillStyle = '#ff4500';
+      ctx.fillRect(6, 38, 4, 3);
+      ctx.fillStyle = '#ffa500';
+      ctx.fillRect(10, 37, 4, 2);
+
+      // Heavy Iron Anvil
+      ctx.fillStyle = '#26262e';
+      ctx.fillRect(26, 32, 14, 14);
+      ctx.fillStyle = '#3c3c47';
+      ctx.fillRect(24, 28, 18, 5); // anvil top face & horn
+
+      // Griswold Body (Center)
+      ctx.fillStyle = '#4a4a52';
+      ctx.fillRect(14, 16, 12, 16);
+
+      // Leather Apron
+      ctx.fillStyle = '#59381c';
+      ctx.fillRect(15, 18, 10, 20);
+
+      // Bare muscular arms
+      ctx.fillStyle = '#d9aa82';
+      ctx.fillRect(11, 18, 4, 10);
+      ctx.fillRect(25, 18, 4, 10);
+
+      // Hammer in hand
+      ctx.fillStyle = '#737380';
+      ctx.fillRect(27, 24, 6, 4);
+
+      // Head & grey hair
+      ctx.fillStyle = '#d9aa82';
+      ctx.beginPath();
+      ctx.arc(20, 12, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#6b6b75';
+      ctx.fillRect(15, 8, 10, 4);
+
+      this.storeTexture('prop_griswold', canvas);
+    }
+
+    // 10. Pepin the Healer (Tan robes, crimson cross, apothecary potion table)
+    {
+      const canvas = document.createElement('canvas');
+      canvas.width = 36;
+      canvas.height = 48;
+      const ctx = canvas.getContext('2d')!;
+
+      // Apothecary wooden table
+      ctx.fillStyle = '#422e1a';
+      ctx.fillRect(22, 28, 12, 18);
+      // Glass potions on table
+      ctx.fillStyle = '#c70a1a';
+      ctx.fillRect(24, 24, 3, 4);
+      ctx.fillStyle = '#0f52ba';
+      ctx.fillRect(29, 23, 3, 5);
+
+      // Pepin Monk Robe (Beige/Tan)
+      ctx.fillStyle = '#c4ab85';
+      ctx.beginPath();
+      ctx.moveTo(9, 16);
+      ctx.lineTo(21, 16);
+      ctx.lineTo(23, 46);
+      ctx.lineTo(7, 46);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#856d4b';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Red cross sash
+      ctx.fillStyle = '#9c1c1c';
+      ctx.fillRect(13, 18, 4, 16);
+      ctx.fillRect(10, 23, 10, 4);
+
+      // Head
+      ctx.fillStyle = '#d9aa82';
+      ctx.beginPath();
+      ctx.arc(15, 11, 5.5, 0, Math.PI * 2);
+      ctx.fill();
+      // Monk tonsure haircut
+      ctx.fillStyle = '#3d2511';
+      ctx.arc(15, 9, 5.5, Math.PI, Math.PI * 2);
+      ctx.fill();
+
+      this.storeTexture('prop_pepin', canvas);
+    }
+
+    // 11. Tristram Town Fountain / Stone Well
+    {
+      const canvas = document.createElement('canvas');
+      canvas.width = 48;
+      canvas.height = 44;
+      const ctx = canvas.getContext('2d')!;
+
+      // Stone Basin (Isometric oval)
+      ctx.beginPath();
+      ctx.ellipse(24, 30, 20, 11, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#3a3a45';
+      ctx.fill();
+      ctx.strokeStyle = '#1a1a22';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Clear blue water
+      ctx.beginPath();
+      ctx.ellipse(24, 29, 15, 8, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#1c5d94';
+      ctx.fill();
+      // Shimmer reflection
+      ctx.fillStyle = '#56a6e8';
+      ctx.fillRect(20, 28, 5, 2);
+
+      // Wooden support pillars
+      ctx.fillStyle = '#4a331c';
+      ctx.fillRect(10, 10, 3, 20);
+      ctx.fillRect(35, 10, 3, 20);
+
+      // Pitched shingle roof
+      ctx.beginPath();
+      ctx.moveTo(7, 12);
+      ctx.lineTo(24, 3);
+      ctx.lineTo(41, 12);
+      ctx.closePath();
+      ctx.fillStyle = '#3b2514';
+      ctx.fill();
+      ctx.strokeStyle = '#24160a';
+      ctx.stroke();
+
+      // Hanging bucket
+      ctx.fillStyle = '#26190f';
+      ctx.fillRect(22, 17, 4, 5);
+
+      this.storeTexture('prop_fountain', canvas);
+    }
+
+    // 12. Cathedral Entrance Gate (Grand gothic archway leading down into Level 1)
+    {
+      const canvas = document.createElement('canvas');
+      canvas.width = 64;
+      canvas.height = 68;
+      const ctx = canvas.getContext('2d')!;
+
+      // Stone pillars
+      ctx.fillStyle = '#2a2833';
+      ctx.fillRect(6, 12, 12, 54);
+      ctx.fillRect(46, 12, 12, 54);
+
+      // Gothic pointed archway
+      ctx.beginPath();
+      ctx.moveTo(6, 16);
+      ctx.lineTo(32, 2);
+      ctx.lineTo(58, 16);
+      ctx.lineTo(58, 24);
+      ctx.lineTo(32, 10);
+      ctx.lineTo(6, 24);
+      ctx.closePath();
+      ctx.fillStyle = '#3c3947';
+      ctx.fill();
+      ctx.strokeStyle = '#16151c';
+      ctx.stroke();
+
+      // Dark portal opening leading down
+      ctx.fillStyle = '#0a090f';
+      ctx.fillRect(18, 18, 28, 48);
+
+      // Stone steps descending into blackness
+      const stepColors = ['#383445', '#2c2936', '#201e26', '#15131a', '#0a090d'];
+      for (let s = 0; s < stepColors.length; s++) {
+        ctx.fillStyle = stepColors[s];
+        ctx.fillRect(20, 26 + s * 8, 24, 7);
+      }
+
+      // Torches on pillars
+      ctx.fillStyle = '#422e17';
+      ctx.fillRect(11, 26, 2, 7);
+      ctx.fillRect(51, 26, 2, 7);
+      ctx.fillStyle = '#ff6a00';
+      ctx.beginPath();
+      ctx.arc(12, 24, 3, 0, Math.PI * 2);
+      ctx.arc(52, 24, 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      this.storeTexture('prop_cathedral_entrance', canvas);
+    }
+
+    // 13. Withered Gothic Tree (Gnarled oak of Tristram)
+    {
+      const canvas = document.createElement('canvas');
+      canvas.width = 40;
+      canvas.height = 56;
+      const ctx = canvas.getContext('2d')!;
+
+      // Gnarled dark trunk
+      ctx.fillStyle = '#2b1b11';
+      ctx.beginPath();
+      ctx.moveTo(18, 56);
+      ctx.lineTo(24, 56);
+      ctx.lineTo(22, 26);
+      ctx.lineTo(16, 26);
+      ctx.closePath();
+      ctx.fill();
+
+      // Spreading twisted branches
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#382417';
+      ctx.beginPath();
+      ctx.moveTo(19, 26);
+      ctx.lineTo(8, 14);
+      ctx.lineTo(4, 8);
+      ctx.moveTo(21, 24);
+      ctx.lineTo(30, 12);
+      ctx.lineTo(36, 6);
+      ctx.moveTo(20, 22);
+      ctx.lineTo(20, 8);
+      ctx.stroke();
+
+      // Autumnal moss / sparse dead foliage
+      ctx.fillStyle = '#26331a';
+      ctx.fillRect(5, 7, 5, 4);
+      ctx.fillRect(28, 10, 6, 4);
+      ctx.fillRect(18, 6, 6, 4);
+
+      this.storeTexture('prop_tree', canvas);
     }
   }
 

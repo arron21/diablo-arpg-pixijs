@@ -97,6 +97,21 @@ export class Automap {
           this.linesGraphics.rect(screenPos.x + halfW - 7, screenPos.y + halfH - 7, 14, 14);
           this.linesGraphics.fill({ color: 0x145cc4, alpha: 0.85 });
           this.linesGraphics.stroke({ color: 0x73b2ff, width: 2 });
+        } else if (tile === TileType.CATHEDRAL_ENTRANCE) {
+          // Cathedral Entrance: Crimson & Gold Gothic Marker
+          this.linesGraphics.rect(screenPos.x + halfW - 8, screenPos.y + halfH - 8, 16, 16);
+          this.linesGraphics.fill({ color: 0x7a1111, alpha: 0.9 });
+          this.linesGraphics.stroke({ color: 0xd4af37, width: 2 });
+        } else if (tile === TileType.TOWN_PORTAL) {
+          // Town Portal: Glowing Mystic Cyan Oval
+          this.linesGraphics.circle(screenPos.x + halfW, screenPos.y + halfH, 7);
+          this.linesGraphics.fill({ color: 0x1f5c99, alpha: 0.9 });
+          this.linesGraphics.stroke({ color: 0x66c2ff, width: 2 });
+        } else if (tile === TileType.NPC_CAIN || tile === TileType.NPC_GRISWOLD || tile === TileType.NPC_PEPIN) {
+          // Friendly NPC markers: Gold dots
+          this.linesGraphics.circle(screenPos.x + halfW, screenPos.y + halfH, 4);
+          this.linesGraphics.fill({ color: 0xd4af37 });
+          this.linesGraphics.stroke({ color: 0xffffff, width: 1 });
         }
       }
     }

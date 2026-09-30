@@ -1,4 +1,4 @@
-import { Application } from 'pixi.js';
+import { Application, Container, Graphics, Text, TextStyle } from 'pixi.js';
 import { Camera } from './engine/Camera';
 import { LayerManager } from './engine/LayerManager';
 import { screenToGrid } from './engine/IsoMath';
@@ -52,9 +52,22 @@ async function bootstrap() {
   const groundItems = new GroundItemManager(layers.entityLayer);
 
   // 4. World & Dungeon State
-  let currentLevelNumber = 1;
-  let dungeon: DungeonLevel = DungeonGenerator.generate(currentLevelNumber);
-  let fog = new FogOfWar(dungeon.width, dungeon.height);
+  let currentLevelNumber = 0; // 0 = Tristram town hub
+  const dungeonLevels = new Map<number, DungeonLevel>();
+  const levelFogs = new Map<number, FogOfWar>();
+  const levelMonsters = new Map<number, Monster[]>();
+  const levelGroundItems = new Map<number, { item: any; gx: number; gy: number }[]>();
+  let activePortal: { levelNumber: number; gx: number; gy: number } | null = null;
+  let lastTransitionTime = 0;
+
+  const tristramLevel = DungeonGenerator.createTristram();
+  dungeonLevels.set(0, tristramLevel);
+  let dungeon: DungeonLevel = tristramLevel;
+
+  const tristramFog = new FogOfWar(dungeon.width, dungeon.height);
+  tristramFog.revealAll();
+  levelFogs.set(0, tristramFog);
+  let fog = tristramFog;
   layers.lightingLayer.addChild(fog.graphics);
 
   const tilemapRenderer = new TilemapRenderer(layers.floorLayer, layers.worldObjectLayer);
@@ -70,6 +83,9 @@ async function bootstrap() {
   camera.jumpTo(player.spriteContainer.x, player.spriteContainer.y);
 
   let monsters: Monster[] = [];
+  levelMonsters.set(0, []);
+
+  let showDeathScreen: () => void = () => {};
 
   function spawnMonstersForDungeon() {
     // Clean old monsters
@@ -133,6 +149,7 @@ async function bootstrap() {
           player.updateSpriteTexture();
           sounds.play('skeleton_death');
           floatingTexts.spawn('YOU DIED', player.spriteContainer.x, player.spriteContainer.y - 40, 0xff0000);
+          showDeathScreen();
         } else if (result.triggersHitRecovery) {
           player.triggerHitRecovery();
         } else {
@@ -142,7 +159,10 @@ async function bootstrap() {
     };
   }
 
-  spawnMonstersForDungeon();
+  // Monsters are only spawned when entering a cathedral level
+  if (currentLevelNumber > 0) {
+    spawnMonstersForDungeon();
+  }
 
   // Player attack hit resolution
   player.onAttackHit = (target: Entity | null) => {
@@ -273,6 +293,13 @@ async function bootstrap() {
       item.quality === 'unique' ? 0xd4af37 : (item.quality === 'magic' ? 0x59a2ff : 0xcccccc)
     );
   };
+
+  inventoryView.onUseScroll = (item) => {
+    if (item.name.includes('Portal')) {
+      return useTownPortal();
+    }
+    return false;
+  };
   layers.modalLayer.addChild(inventoryView.container);
 
   characterSheet = new CharacterSheetView(player, (k) => sounds.play(k));
@@ -282,18 +309,230 @@ async function bootstrap() {
 
   tristramHub = new TristramHub(
     player,
-    () => {
-      // Returning to dungeon
-      sounds.play('portal_open');
-    },
+    () => returnThroughTownPortal(),
+    () => switchLevel(1),
     (k) => sounds.play(k)
   );
-  tristramHub.container.x = app.screen.width / 2 - 240;
-  tristramHub.container.y = app.screen.height / 2 - 200;
+  tristramHub.container.x = app.screen.width / 2 - 260;
+  tristramHub.container.y = app.screen.height / 2 - 215;
   layers.modalLayer.addChild(tristramHub.container);
+
+  // Death Screen Overlay
+  const deathOverlay = new Container();
+  deathOverlay.visible = false;
+  deathOverlay.eventMode = 'static';
+
+  const deathBg = new Graphics();
+  deathBg.rect(0, 0, app.screen.width, app.screen.height);
+  deathBg.fill({ color: 0x1f0303, alpha: 0.88 });
+  deathOverlay.addChild(deathBg);
+
+  const deathTitle = new Text({
+    text: 'YOU HAVE DIED',
+    style: new TextStyle({
+      fontFamily: 'serif',
+      fontSize: 34,
+      fontWeight: 'bold',
+      fill: 0xff2222,
+      dropShadow: { color: 0x000000, distance: 3, blur: 4 }
+    })
+  });
+  deathTitle.anchor.set(0.5);
+  deathTitle.x = app.screen.width / 2;
+  deathTitle.y = app.screen.height / 2 - 60;
+  deathOverlay.addChild(deathTitle);
+
+  const deathSubtitle = new Text({
+    text: 'Your mortal form succumbs to the labyrinth...\nDeckard Cain and the townsfolk pull your weary spirit back to Tristram.',
+    style: new TextStyle({
+      fontFamily: 'serif',
+      fontSize: 13,
+      fontStyle: 'italic',
+      fill: 0xdecba4,
+      align: 'center',
+      lineHeight: 20
+    })
+  });
+  deathSubtitle.anchor.set(0.5);
+  deathSubtitle.x = app.screen.width / 2;
+  deathSubtitle.y = app.screen.height / 2;
+  deathOverlay.addChild(deathSubtitle);
+
+  const respawnBtn = new Container();
+  respawnBtn.eventMode = 'static';
+  respawnBtn.cursor = 'pointer';
+
+  const rBtnBg = new Graphics();
+  rBtnBg.rect(0, 0, 240, 40);
+  rBtnBg.fill({ color: 0x471414 });
+  rBtnBg.stroke({ color: 0xb52828, width: 2 });
+  respawnBtn.addChild(rBtnBg);
+
+  const rBtnTxt = new Text({
+    text: 'RESPAWN IN TRISTRAM',
+    style: new TextStyle({ fontFamily: 'serif', fontSize: 13, fontWeight: 'bold', fill: 0xffd700 })
+  });
+  rBtnTxt.anchor.set(0.5);
+  rBtnTxt.x = 120;
+  rBtnTxt.y = 20;
+  respawnBtn.addChild(rBtnTxt);
+
+  respawnBtn.x = app.screen.width / 2 - 120;
+  respawnBtn.y = app.screen.height / 2 + 50;
+
+  respawnBtn.on('pointerdown', (e) => {
+    e.stopPropagation();
+    respawnPlayerInTristram();
+  });
+  deathOverlay.addChild(respawnBtn);
+  layers.modalLayer.addChild(deathOverlay);
+
+  let deathTimer: number | null = null;
+  showDeathScreen = () => {
+    inventoryView.close();
+    characterSheet.close();
+    tristramHub.close();
+    deathOverlay.visible = true;
+    if (deathTimer) clearTimeout(deathTimer);
+    deathTimer = window.setTimeout(() => {
+      if (deathOverlay.visible) {
+        respawnPlayerInTristram();
+      }
+    }, 3500);
+  };
+
+  function respawnPlayerInTristram() {
+    if (deathTimer) {
+      clearTimeout(deathTimer);
+      deathTimer = null;
+    }
+    deathOverlay.visible = false;
+    switchLevel(0, 13, 15);
+    player.respawn(13, 15);
+    sounds.play('potion_gulp');
+    floatingTexts.spawn('AWAKENED IN TRISTRAM', player.spriteContainer.x, player.spriteContainer.y - 40, 0x59a2ff);
+    floatingTexts.spawn('Health & Mana Restored', player.spriteContainer.x, player.spriteContainer.y - 20, 0x55ff55);
+  }
+
+  function switchLevel(targetLevelNumber: number, targetGx?: number, targetGy?: number) {
+    const now = Date.now();
+    lastTransitionTime = now;
+
+    inventoryView.close();
+    characterSheet.close();
+    tristramHub.close();
+
+    // 1. Save state of current level
+    levelMonsters.set(currentLevelNumber, monsters);
+    for (const m of monsters) {
+      layers.entityLayer.removeChild(m.spriteContainer);
+    }
+
+    const savedGroundItems = groundItems.getAllItems().map(g => ({ item: g.item, gx: g.gx, gy: g.gy }));
+    levelGroundItems.set(currentLevelNumber, savedGroundItems);
+    groundItems.clear();
+
+    currentLevelNumber = targetLevelNumber;
+
+    // 2. Fetch or create destination level
+    if (!dungeonLevels.has(currentLevelNumber)) {
+      dungeonLevels.set(currentLevelNumber, DungeonGenerator.generate(currentLevelNumber));
+    }
+    dungeon = dungeonLevels.get(currentLevelNumber)!;
+
+    // 3. Fog of war
+    if (!levelFogs.has(currentLevelNumber)) {
+      const newFog = new FogOfWar(dungeon.width, dungeon.height);
+      if (currentLevelNumber === 0) newFog.revealAll();
+      levelFogs.set(currentLevelNumber, newFog);
+    }
+    fog = levelFogs.get(currentLevelNumber)!;
+    layers.lightingLayer.removeChildren();
+    layers.lightingLayer.addChild(fog.graphics);
+
+    // 4. Render tilemap
+    tilemapRenderer.renderDungeon(dungeon);
+
+    // 5. Position player
+    if (targetGx !== undefined && targetGy !== undefined) {
+      player.gx = targetGx;
+      player.gy = targetGy;
+    } else {
+      player.gx = dungeon.playerSpawn.gx;
+      player.gy = dungeon.playerSpawn.gy;
+    }
+    player.currentPath = [];
+    player.targetEntity = null;
+    player.updateScreenPosition();
+    camera.jumpTo(player.spriteContainer.x, player.spriteContainer.y);
+
+    // 6. Restore or spawn monsters
+    if (currentLevelNumber === 0) {
+      monsters = [];
+    } else if (levelMonsters.has(currentLevelNumber)) {
+      monsters = levelMonsters.get(currentLevelNumber)!;
+      for (const m of monsters) {
+        layers.entityLayer.addChild(m.spriteContainer);
+      }
+    } else {
+      spawnMonstersForDungeon();
+      levelMonsters.set(currentLevelNumber, monsters);
+    }
+
+    // 7. Restore ground items
+    if (levelGroundItems.has(currentLevelNumber)) {
+      for (const g of levelGroundItems.get(currentLevelNumber)!) {
+        groundItems.dropItem(g.item, g.gx, g.gy);
+      }
+    }
+
+    // 8. Update portal state on hub
+    tristramHub.hasActivePortal = (activePortal !== null);
+
+    // 9. Zone announcement
+    sounds.play(currentLevelNumber === 0 ? 'portal_open' : 'footstep');
+    const zoneName = currentLevelNumber === 0
+      ? 'TOWN OF TRISTRAM'
+      : (currentLevelNumber === 2 ? 'CATHEDRAL LEVEL 2 - THE LAIR OF THE BUTCHER' : `CATHEDRAL LEVEL ${currentLevelNumber}`);
+    floatingTexts.spawn(zoneName, app.screen.width / 2, app.screen.height / 2 - 60, 0xd4af37);
+  }
+
+  function useTownPortal(): boolean {
+    if (currentLevelNumber === 0) {
+      floatingTexts.spawn('You are already in Tristram!', player.spriteContainer.x, player.spriteContainer.y - 20, 0x88ccee);
+      return false;
+    }
+
+    const portalGx = Math.floor(player.gx);
+    const portalGy = Math.floor(player.gy);
+    activePortal = { levelNumber: currentLevelNumber, gx: portalGx, gy: portalGy };
+
+    // Place portal tile in dungeon if currently floor
+    if (dungeon.tiles[portalGy][portalGx] === TileType.FLOOR) {
+      dungeon.tiles[portalGy][portalGx] = TileType.TOWN_PORTAL;
+      tilemapRenderer.renderDungeon(dungeon);
+    }
+
+    tristramHub.hasActivePortal = true;
+    sounds.play('portal_open');
+    switchLevel(0, 13, 14);
+    floatingTexts.spawn('Stepped through Town Portal to Tristram', player.spriteContainer.x, player.spriteContainer.y - 30, 0x59a2ff);
+    return true;
+  }
+
+  function returnThroughTownPortal(): void {
+    if (activePortal) {
+      sounds.play('portal_open');
+      switchLevel(activePortal.levelNumber, activePortal.gx, activePortal.gy);
+      floatingTexts.spawn('Returned to Cathedral', player.spriteContainer.x, player.spriteContainer.y - 30, 0x59a2ff);
+    } else {
+      floatingTexts.spawn('No town portal is open! Enter Cathedral north-east.', player.spriteContainer.x, player.spriteContainer.y - 20, 0x88ccee);
+    }
+  }
 
   // 7. Input & Hotkeys
   input.onKeyDown((code) => {
+    if (deathOverlay.visible) return;
     if (code === 'KeyI') toggleInventory();
     if (code === 'KeyC') toggleCharacter();
     if (code === 'Tab') toggleAutomap();
@@ -314,7 +553,7 @@ async function bootstrap() {
     if (player.state === ActionState.DEAD || player.state === ActionState.HIT_RECOVERY) {
       return;
     }
-    if (inventoryView.isVisible || characterSheet.isVisible || tristramHub.isVisible) {
+    if (inventoryView.isVisible || characterSheet.isVisible || tristramHub.isVisible || deathOverlay.visible) {
       return;
     }
 
@@ -368,47 +607,19 @@ async function bootstrap() {
     if (!item) return;
 
     if (item.type === ItemType.SCROLL && item.name.includes('Portal')) {
-      player.belt.useSlot(slotIdx);
-      sounds.play('portal_open');
-      tristramHub.open();
+      if (useTownPortal()) {
+        player.belt.useSlot(slotIdx);
+      }
     } else {
       player.useBeltSlot(slotIdx);
     }
-  }
-
-  function handleDungeonDescent() {
-    inventoryView.close();
-    characterSheet.close();
-    currentLevelNumber++;
-    sounds.play('footstep');
-    floatingTexts.spawn(
-      currentLevelNumber === 2 ? 'CATHEDRAL LEVEL 2 - THE LAIR OF THE BUTCHER' : `CATHEDRAL LEVEL ${currentLevelNumber}`,
-      app.screen.width / 2,
-      app.screen.height / 2 - 60,
-      0xd4af37
-    );
-
-    // Generate new floor
-    dungeon = DungeonGenerator.generate(currentLevelNumber);
-    fog = new FogOfWar(dungeon.width, dungeon.height);
-    layers.lightingLayer.removeChildren();
-    layers.lightingLayer.addChild(fog.graphics);
-
-    tilemapRenderer.renderDungeon(dungeon);
-
-    player.gx = dungeon.playerSpawn.gx;
-    player.gy = dungeon.playerSpawn.gy;
-    player.currentPath = [];
-    player.updateScreenPosition();
-    camera.jumpTo(player.spriteContainer.x, player.spriteContainer.y);
-
-    spawnMonstersForDungeon();
   }
 
   // Mouse interaction handler
   let lastClickTime = 0;
   window.addEventListener('mousedown', (e) => {
     if (e.button !== 0) return; // Only primary click
+    if (deathOverlay.visible) return; // Prevent clicks during death screen
 
     // Ignore clicks on bottom HUD bar
     if (e.clientY >= app.screen.height - 90) {
@@ -418,7 +629,7 @@ async function bootstrap() {
     if (tristramHub.isVisible) {
       const hubX = tristramHub.container.x;
       const hubY = tristramHub.container.y;
-      if (e.clientX >= hubX && e.clientX <= hubX + 480 && e.clientY >= hubY && e.clientY <= hubY + 400) {
+      if (e.clientX >= hubX && e.clientX <= hubX + 520 && e.clientY >= hubY && e.clientY <= hubY + 430) {
         return;
       }
     }
@@ -554,10 +765,75 @@ async function bootstrap() {
       return;
     }
 
-    // 3. Check interactive props (doors, sarcophagi, urns, stairs)
+    // 3. Check interactive props (doors, NPCs, fountain, cathedral, stairs)
     if (gridPos.gx >= 0 && gridPos.gx < dungeon.width && gridPos.gy >= 0 && gridPos.gy < dungeon.height) {
       const tile = dungeon.tiles[gridPos.gy][gridPos.gx];
+      const dist = Math.hypot(gridPos.gx - player.gx, gridPos.gy - player.gy);
 
+      // --- TRISTRAM TOWN HUB INTERACTIONS ---
+      if (currentLevelNumber === 0) {
+        if (tile === TileType.NPC_CAIN) {
+          if (dist <= 2.2) {
+            tristramHub.open('cain');
+            sounds.play('item_equip');
+          } else {
+            player.currentPath = Pathfinding.findPath(dungeon, Math.floor(player.gx), Math.floor(player.gy), gridPos.gx, gridPos.gy);
+          }
+          return;
+        }
+
+        if (tile === TileType.NPC_GRISWOLD) {
+          if (dist <= 2.2) {
+            tristramHub.open('griswold');
+            sounds.play('item_equip');
+          } else {
+            player.currentPath = Pathfinding.findPath(dungeon, Math.floor(player.gx), Math.floor(player.gy), gridPos.gx, gridPos.gy);
+          }
+          return;
+        }
+
+        if (tile === TileType.NPC_PEPIN) {
+          if (dist <= 2.2) {
+            tristramHub.open('pepin');
+            sounds.play('item_equip');
+          } else {
+            player.currentPath = Pathfinding.findPath(dungeon, Math.floor(player.gx), Math.floor(player.gy), gridPos.gx, gridPos.gy);
+          }
+          return;
+        }
+
+        if (tile === TileType.TOWN_FOUNTAIN) {
+          if (dist <= 2.2) {
+            player.stats.currentHp = player.stats.maxHp;
+            player.stats.currentMana = player.stats.maxMana;
+            sounds.play('potion_gulp');
+            floatingTexts.spawn('Fountain of Purity: Restored!', player.spriteContainer.x, player.spriteContainer.y - 25, 0x55ff55);
+          } else {
+            player.currentPath = Pathfinding.findPath(dungeon, Math.floor(player.gx), Math.floor(player.gy), gridPos.gx, gridPos.gy);
+          }
+          return;
+        }
+
+        if (tile === TileType.CATHEDRAL_ENTRANCE) {
+          if (dist <= 2.2) {
+            switchLevel(1);
+          } else {
+            player.currentPath = Pathfinding.findPath(dungeon, Math.floor(player.gx), Math.floor(player.gy), gridPos.gx, gridPos.gy);
+          }
+          return;
+        }
+
+        if (tile === TileType.TOWN_PORTAL) {
+          if (dist <= 2.2) {
+            returnThroughTownPortal();
+          } else {
+            player.currentPath = Pathfinding.findPath(dungeon, Math.floor(player.gx), Math.floor(player.gy), gridPos.gx, gridPos.gy);
+          }
+          return;
+        }
+      }
+
+      // --- DUNGEON INTERACTIONS ---
       // Door
       if (tile === TileType.DOOR) {
         const doorKey = `${gridPos.gx},${gridPos.gy}`;
@@ -574,11 +850,32 @@ async function bootstrap() {
         return;
       }
 
-      // Stairs Down
+      // Stairs Down (Descend deeper into Cathedral)
       if (tile === TileType.STAIRS_DOWN) {
-        const dist = Math.hypot(gridPos.gx - player.gx, gridPos.gy - player.gy);
-        if (dist <= 1.8) {
-          handleDungeonDescent();
+        if (dist <= 2.0) {
+          switchLevel(currentLevelNumber + 1);
+          return;
+        }
+      }
+
+      // Stairs Up / Cathedral Exit (Ascend towards town)
+      if (tile === TileType.STAIRS_UP || tile === TileType.CATHEDRAL_ENTRANCE) {
+        if (dist <= 2.0) {
+          if (currentLevelNumber === 1) {
+            // Ascend to Tristram outside Cathedral entrance
+            switchLevel(0, 21, 7);
+          } else {
+            switchLevel(currentLevelNumber - 1);
+          }
+          return;
+        }
+      }
+
+      // Town Portal in Dungeon
+      if (tile === TileType.TOWN_PORTAL && currentLevelNumber > 0) {
+        if (dist <= 2.0) {
+          sounds.play('portal_open');
+          switchLevel(0, 13, 14);
           return;
         }
       }
@@ -587,7 +884,6 @@ async function bootstrap() {
       const propKey = `${gridPos.gx},${gridPos.gy}`;
       const prop = dungeon.props.get(propKey);
       if (prop && !prop.isOpenedOrBroken) {
-        const dist = Math.hypot(gridPos.gx - player.gx, gridPos.gy - player.gy);
         if (dist <= 1.8) {
           prop.isOpenedOrBroken = true;
           tilemapRenderer.updatePropBroken(prop);
@@ -623,8 +919,18 @@ async function bootstrap() {
     inventoryView.container.y = app.screen.height / 2 - 230;
     characterSheet.container.x = app.screen.width / 2 - 150;
     characterSheet.container.y = app.screen.height / 2 - 210;
-    tristramHub.container.x = app.screen.width / 2 - 240;
-    tristramHub.container.y = app.screen.height / 2 - 200;
+    tristramHub.container.x = app.screen.width / 2 - 260;
+    tristramHub.container.y = app.screen.height / 2 - 215;
+
+    deathBg.clear();
+    deathBg.rect(0, 0, app.screen.width, app.screen.height);
+    deathBg.fill({ color: 0x1f0303, alpha: 0.88 });
+    deathTitle.x = app.screen.width / 2;
+    deathTitle.y = app.screen.height / 2 - 60;
+    deathSubtitle.x = app.screen.width / 2;
+    deathSubtitle.y = app.screen.height / 2;
+    respawnBtn.x = app.screen.width / 2 - 120;
+    respawnBtn.y = app.screen.height / 2 + 50;
   });
 
   // 8. Main Game Loop (Ticker)
@@ -641,6 +947,35 @@ async function bootstrap() {
       player.moveByWasd(input.state.moveAxisX, input.state.moveAxisY, deltaMs, dungeon);
     } else {
       player.update(deltaMs);
+    }
+
+    // Tile-stepping triggers (Cathedral entrance, stairs down, stairs up, town portal)
+    const nowMs = Date.now();
+    if (nowMs - lastTransitionTime > 1500) {
+      const curGx = Math.floor(player.gx);
+      const curGy = Math.floor(player.gy);
+      if (curGx >= 0 && curGx < dungeon.width && curGy >= 0 && curGy < dungeon.height) {
+        const curTile = dungeon.tiles[curGy][curGx];
+        if (currentLevelNumber === 0) {
+          if (curTile === TileType.CATHEDRAL_ENTRANCE) {
+            switchLevel(1);
+          } else if (curTile === TileType.TOWN_PORTAL) {
+            returnThroughTownPortal();
+          }
+        } else {
+          if (curTile === TileType.STAIRS_DOWN) {
+            switchLevel(currentLevelNumber + 1);
+          } else if (curTile === TileType.STAIRS_UP || curTile === TileType.CATHEDRAL_ENTRANCE) {
+            if (currentLevelNumber === 1) {
+              switchLevel(0, 21, 7);
+            } else {
+              switchLevel(currentLevelNumber - 1);
+            }
+          } else if (curTile === TileType.TOWN_PORTAL) {
+            switchLevel(0, 13, 14);
+          }
+        }
+      }
     }
 
     // Camera follow player

@@ -137,6 +137,86 @@ export class TilemapRenderer {
           this.propSprites.set(`stairs_${x}_${y}`, stairsSpr);
           (stairsSpr as any).tileX = x;
           (stairsSpr as any).tileY = y;
+        } else if (tile === TileType.STAIRS_UP) {
+          const stairsUpSpr = new Sprite(AssetFactory.getTexture('prop_stairs_up'));
+          stairsUpSpr.x = screenPos.x;
+          stairsUpSpr.y = screenPos.y - 8;
+          stairsUpSpr.zIndex = calculateDepth(x, y, 2);
+          stairsUpSpr.visible = false;
+          this.objectContainer.addChild(stairsUpSpr);
+          this.propSprites.set(`stairs_up_${x}_${y}`, stairsUpSpr);
+          (stairsUpSpr as any).tileX = x;
+          (stairsUpSpr as any).tileY = y;
+        } else if (tile === TileType.NPC_CAIN) {
+          const cainSpr = new Sprite(AssetFactory.getTexture('prop_cain'));
+          cainSpr.x = screenPos.x + 14;
+          cainSpr.y = screenPos.y - 20;
+          cainSpr.zIndex = calculateDepth(x, y, 12);
+          cainSpr.visible = false;
+          this.objectContainer.addChild(cainSpr);
+          this.propSprites.set(`cain_${x}_${y}`, cainSpr);
+          (cainSpr as any).tileX = x;
+          (cainSpr as any).tileY = y;
+        } else if (tile === TileType.NPC_GRISWOLD) {
+          const grisSpr = new Sprite(AssetFactory.getTexture('prop_griswold'));
+          grisSpr.x = screenPos.x + 10;
+          grisSpr.y = screenPos.y - 20;
+          grisSpr.zIndex = calculateDepth(x, y, 12);
+          grisSpr.visible = false;
+          this.objectContainer.addChild(grisSpr);
+          this.propSprites.set(`griswold_${x}_${y}`, grisSpr);
+          (grisSpr as any).tileX = x;
+          (grisSpr as any).tileY = y;
+        } else if (tile === TileType.NPC_PEPIN) {
+          const pepinSpr = new Sprite(AssetFactory.getTexture('prop_pepin'));
+          pepinSpr.x = screenPos.x + 14;
+          pepinSpr.y = screenPos.y - 20;
+          pepinSpr.zIndex = calculateDepth(x, y, 12);
+          pepinSpr.visible = false;
+          this.objectContainer.addChild(pepinSpr);
+          this.propSprites.set(`pepin_${x}_${y}`, pepinSpr);
+          (pepinSpr as any).tileX = x;
+          (pepinSpr as any).tileY = y;
+        } else if (tile === TileType.TOWN_FOUNTAIN) {
+          const fountSpr = new Sprite(AssetFactory.getTexture('prop_fountain'));
+          fountSpr.x = screenPos.x + 8;
+          fountSpr.y = screenPos.y - 16;
+          fountSpr.zIndex = calculateDepth(x, y, 11);
+          fountSpr.visible = false;
+          this.objectContainer.addChild(fountSpr);
+          this.propSprites.set(`fountain_${x}_${y}`, fountSpr);
+          (fountSpr as any).tileX = x;
+          (fountSpr as any).tileY = y;
+        } else if (tile === TileType.CATHEDRAL_ENTRANCE) {
+          const cathSpr = new Sprite(AssetFactory.getTexture('prop_cathedral_entrance'));
+          cathSpr.x = screenPos.x;
+          cathSpr.y = screenPos.y - 42;
+          cathSpr.zIndex = calculateDepth(x, y, 15);
+          cathSpr.visible = false;
+          this.objectContainer.addChild(cathSpr);
+          this.propSprites.set(`cathedral_${x}_${y}`, cathSpr);
+          (cathSpr as any).tileX = x;
+          (cathSpr as any).tileY = y;
+        } else if (tile === TileType.TOWN_PORTAL) {
+          const portalSpr = new Sprite(AssetFactory.getTexture('prop_portal'));
+          portalSpr.x = screenPos.x + 8;
+          portalSpr.y = screenPos.y - 30;
+          portalSpr.zIndex = calculateDepth(x, y, 14);
+          portalSpr.visible = false;
+          this.objectContainer.addChild(portalSpr);
+          this.propSprites.set(`portal_${x}_${y}`, portalSpr);
+          (portalSpr as any).tileX = x;
+          (portalSpr as any).tileY = y;
+        } else if (tile === TileType.TREE) {
+          const treeSpr = new Sprite(AssetFactory.getTexture('prop_tree'));
+          treeSpr.x = screenPos.x + 12;
+          treeSpr.y = screenPos.y - 32;
+          treeSpr.zIndex = calculateDepth(x, y, 15);
+          treeSpr.visible = false;
+          this.objectContainer.addChild(treeSpr);
+          this.propSprites.set(`tree_${x}_${y}`, treeSpr);
+          (treeSpr as any).tileX = x;
+          (treeSpr as any).tileY = y;
         }
       }
       this.floorSprites.push(row);

@@ -61,4 +61,71 @@ describe('DungeonGenerator', () => {
       }
     }
   });
+
+  it('should create a valid Tristram town hub with NPCs, fountain, portal, and cathedral entrance', () => {
+    const tristram = DungeonGenerator.createTristram();
+
+    expect(tristram.levelNumber).toBe(0);
+    expect(tristram.width).toBe(28);
+    expect(tristram.height).toBe(28);
+
+    // Verify player spawn is walkable
+    expect(DungeonGenerator.isWalkable(tristram.tiles[tristram.playerSpawn.gy][tristram.playerSpawn.gx])).toBe(true);
+
+    // Verify key landmark tiles exist
+    let hasCain = false;
+    let hasGriswold = false;
+    let hasPepin = false;
+    let hasFountain = false;
+    let hasCathedralEntrance = false;
+    let hasTownPortal = false;
+
+    let cathPos = { gx: 0, gy: 0 };
+    let cainPos = { gx: 0, gy: 0 };
+
+    for (let y = 0; y < tristram.height; y++) {
+      for (let x = 0; x < tristram.width; x++) {
+        const tile = tristram.tiles[y][x];
+        if (tile === TileType.NPC_CAIN) {
+          hasCain = true;
+          cainPos = { gx: x, gy: y };
+        }
+        if (tile === TileType.NPC_GRISWOLD) hasGriswold = true;
+        if (tile === TileType.NPC_PEPIN) hasPepin = true;
+        if (tile === TileType.TOWN_FOUNTAIN) hasFountain = true;
+        if (tile === TileType.CATHEDRAL_ENTRANCE) {
+          hasCathedralEntrance = true;
+          cathPos = { gx: x, gy: y };
+        }
+        if (tile === TileType.TOWN_PORTAL) hasTownPortal = true;
+      }
+    }
+
+    expect(hasCain).toBe(true);
+    expect(hasGriswold).toBe(true);
+    expect(hasPepin).toBe(true);
+    expect(hasFountain).toBe(true);
+    expect(hasCathedralEntrance).toBe(true);
+    expect(hasTownPortal).toBe(true);
+
+    // Verify A* path from player spawn to Cathedral Entrance
+    const pathToCathedral = Pathfinding.findPath(
+      tristram,
+      tristram.playerSpawn.gx,
+      tristram.playerSpawn.gy,
+      cathPos.gx,
+      cathPos.gy
+    );
+    expect(pathToCathedral.length).toBeGreaterThan(0);
+
+    // Verify path to neighbor of Cain
+    const pathToCain = Pathfinding.findPath(
+      tristram,
+      tristram.playerSpawn.gx,
+      tristram.playerSpawn.gy,
+      cainPos.gx - 1,
+      cainPos.gy
+    );
+    expect(pathToCain.length).toBeGreaterThan(0);
+  });
 });

@@ -10,6 +10,13 @@ export enum TileType {
   STAIRS_UP = 8,
   SARCOPHAGUS = 9,
   URN = 10,
+  NPC_CAIN = 11,
+  NPC_GRISWOLD = 12,
+  NPC_PEPIN = 13,
+  TOWN_FOUNTAIN = 14,
+  CATHEDRAL_ENTRANCE = 15,
+  TOWN_PORTAL = 16,
+  TREE = 17,
 }
 
 export interface Room {
@@ -273,11 +280,182 @@ export class DungeonGenerator {
     };
   }
 
+  public static createTristram(): DungeonLevel {
+    const width = 28;
+    const height = 28;
+
+    const tiles: TileType[][] = Array.from({ length: height }, () =>
+      Array.from({ length: width }, () => TileType.FLOOR)
+    );
+    const floorVariants: string[][] = Array.from({ length: height }, () =>
+      Array.from({ length: width }, () => 'tile_floor_grass')
+    );
+
+    const props: Map<string, PropData> = new Map();
+    const torches: TorchData[] = [];
+
+    // Outer border boundary trees
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        if (x <= 1 || y <= 1 || x >= width - 2 || y >= height - 2) {
+          tiles[y][x] = TileType.TREE;
+        } else if (
+          (x <= 3 && y <= 6) ||
+          (x >= width - 4 && y >= height - 6) ||
+          (x <= 5 && y >= height - 6) ||
+          (x >= width - 6 && y <= 4)
+        ) {
+          tiles[y][x] = TileType.TREE;
+        }
+      }
+    }
+
+    // 1. Cobblestone Town Center Plaza (gx: 11..17, gy: 11..17)
+    for (let y = 11; y <= 17; y++) {
+      for (let x = 11; x <= 17; x++) {
+        tiles[y][x] = TileType.FLOOR;
+        floorVariants[y][x] = (x + y) % 5 === 0 ? 'tile_floor_cracked' : 'tile_floor_stone';
+      }
+    }
+
+    // 2. Dirt paths connecting town sections
+    // Path to Griswold (West)
+    for (let x = 5; x <= 11; x++) {
+      for (let y = 13; y <= 15; y++) {
+        if (tiles[y][x] !== TileType.TREE) {
+          tiles[y][x] = TileType.FLOOR;
+          floorVariants[y][x] = 'tile_floor_dirt';
+        }
+      }
+    }
+
+    // Path to Pepin (South-East)
+    for (let x = 14; x <= 21; x++) {
+      for (let y = 16; y <= 19; y++) {
+        if (tiles[y][x] !== TileType.TREE) {
+          tiles[y][x] = TileType.FLOOR;
+          floorVariants[y][x] = 'tile_floor_dirt';
+        }
+      }
+    }
+
+    // Winding path to Cathedral Entrance (North-East)
+    for (let y = 5; y <= 11; y++) {
+      for (let x = 17; x <= 22; x++) {
+        if (tiles[y][x] !== TileType.TREE) {
+          tiles[y][x] = TileType.FLOOR;
+          floorVariants[y][x] = 'tile_floor_dirt';
+        }
+      }
+    }
+    for (let x = 14; x <= 17; x++) {
+      tiles[10][x] = TileType.FLOOR;
+      floorVariants[10][x] = 'tile_floor_dirt';
+    }
+
+    // 3. Central Fountain & Town Props
+    const fountainGx = 14;
+    const fountainGy = 13;
+    tiles[fountainGy][fountainGx] = TileType.TOWN_FOUNTAIN;
+    props.set(`fountain_${fountainGx}_${fountainGy}`, {
+      id: `fountain_${fountainGx}_${fountainGy}`,
+      type: TileType.TOWN_FOUNTAIN,
+      gx: fountainGx,
+      gy: fountainGy,
+      isOpenedOrBroken: false
+    });
+
+    // 4. Deckard Cain (Standing near town square fountain)
+    const cainGx = 16;
+    const cainGy = 14;
+    tiles[cainGy][cainGx] = TileType.NPC_CAIN;
+    props.set(`cain_${cainGx}_${cainGy}`, {
+      id: `cain_${cainGx}_${cainGy}`,
+      type: TileType.NPC_CAIN,
+      gx: cainGx,
+      gy: cainGy,
+      isOpenedOrBroken: false
+    });
+
+    // 5. Griswold the Blacksmith (Standing at his forge to the West)
+    const griswoldGx = 6;
+    const griswoldGy = 14;
+    tiles[griswoldGy][griswoldGx] = TileType.NPC_GRISWOLD;
+    props.set(`griswold_${griswoldGx}_${griswoldGy}`, {
+      id: `griswold_${griswoldGx}_${griswoldGy}`,
+      type: TileType.NPC_GRISWOLD,
+      gx: griswoldGx,
+      gy: griswoldGy,
+      isOpenedOrBroken: false
+    });
+    torches.push({ gx: griswoldGx + 1, gy: griswoldGy - 1, intensity: 1.0, color: 0xff6622 });
+
+    // 6. Pepin the Healer (Standing by apothecary tent to the South-East)
+    const pepinGx = 20;
+    const pepinGy = 18;
+    tiles[pepinGy][pepinGx] = TileType.NPC_PEPIN;
+    props.set(`pepin_${pepinGx}_${pepinGy}`, {
+      id: `pepin_${pepinGx}_${pepinGy}`,
+      type: TileType.NPC_PEPIN,
+      gx: pepinGx,
+      gy: pepinGy,
+      isOpenedOrBroken: false
+    });
+
+    // 7. Cathedral Entrance (North-East hill leading down into Cathedral Level 1)
+    const cathGx = 21;
+    const cathGy = 6;
+    tiles[cathGy][cathGx] = TileType.CATHEDRAL_ENTRANCE;
+    props.set(`cathedral_${cathGx}_${cathGy}`, {
+      id: `cathedral_${cathGx}_${cathGy}`,
+      type: TileType.CATHEDRAL_ENTRANCE,
+      gx: cathGx,
+      gy: cathGy,
+      isOpenedOrBroken: false
+    });
+    torches.push({ gx: cathGx - 1, gy: cathGy, intensity: 1.0, color: 0xffaa33 });
+    torches.push({ gx: cathGx + 1, gy: cathGy, intensity: 1.0, color: 0xffaa33 });
+
+    // 8. Town Portal Pad (Center Plaza)
+    const portalGx = 13;
+    const portalGy = 13;
+    tiles[portalGy][portalGx] = TileType.TOWN_PORTAL;
+    props.set(`portal_${portalGx}_${portalGy}`, {
+      id: `portal_${portalGx}_${portalGy}`,
+      type: TileType.TOWN_PORTAL,
+      gx: portalGx,
+      gy: portalGy,
+      isOpenedOrBroken: false
+    });
+
+    // Town square torch
+    torches.push({ gx: 14, gy: 11, intensity: 0.9, color: 0xffaa44 });
+
+    const playerSpawn = { gx: 13, gy: 15 };
+    const stairsDown = { gx: cathGx, gy: cathGy };
+
+    return {
+      levelNumber: 0,
+      width,
+      height,
+      tiles,
+      floorVariants,
+      rooms: [{ x: 11, y: 11, w: 7, h: 7, centerX: 14, centerY: 14 }],
+      doors: new Map(),
+      props,
+      torches,
+      playerSpawn,
+      stairsDown
+    };
+  }
+
   public static isWalkable(type: TileType): boolean {
     return (
       type === TileType.FLOOR ||
       type === TileType.STAIRS_DOWN ||
-      type === TileType.STAIRS_UP
+      type === TileType.STAIRS_UP ||
+      type === TileType.CATHEDRAL_ENTRANCE ||
+      type === TileType.TOWN_PORTAL
     );
   }
 
@@ -287,6 +465,7 @@ export class DungeonGenerator {
       type === TileType.WALL_WEST ||
       type === TileType.WALL_CORNER ||
       type === TileType.PILLAR ||
+      type === TileType.TREE ||
       type === TileType.EMPTY
     );
   }

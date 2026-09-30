@@ -87,6 +87,14 @@ export class GroundItemManager {
     }
   }
 
+  public clear(): void {
+    for (const item of this.items) {
+      this.container.removeChild(item.container);
+      item.container.destroy({ children: true });
+    }
+    this.items = [];
+  }
+
   public updateVisibility(isVisibleFn: (gx: number, gy: number) => boolean): void {
     for (const item of this.items) {
       item.container.visible = isVisibleFn(item.gx, item.gy);

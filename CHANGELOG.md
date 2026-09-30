@@ -11,6 +11,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.0] - 2026-09-30
+
+### Added
+- **Walkable Tristram Town Hub (Level 0)**:
+  - Implemented a dedicated isometric town level (`DungeonGenerator.createTristram()`) featuring cobblestone plaza, dirt paths, grass outskirts, decorative perimeter trees, and central fountain.
+  - The game now boots directly into Tristram at the town square, allowing players to prepare, shop, and speak with villagers before entering the Cathedral.
+  - Full illumination without dungeon shadow shroud via `FogOfWar.revealAll()`.
+- **Death & Respawn System**:
+  - When the player falls in battle (`currentHp <= 0`), a dark crimson death screen overlay appears with the message: *"Your soul drifts from the dark abyss... Deckard Cain and the townsfolk pull your weary spirit back to Tristram."*
+  - Includes an interactive `[ RESPAWN IN TRISTRAM ]` button and a 3.5s auto-respawn fallback.
+  - Respawning teleports the player back to Tristram plaza at `(13, 15)` and completely restores Health & Mana (`player.respawn()`).
+- **Interactive Villagers & Town Landmarks**:
+  - **Deckard Cain**: Offers ancient Horadric lore and identifies all magic items for 100 gold.
+  - **Griswold the Blacksmith**: Sells weapons (*Broadsword*), shields (*Heater Shield*), armor (*Iron Cap*), healing potions, and town portal scrolls with dynamic inventory placement and gold verification.
+  - **Pepin the Healer**: Provides free full healing of wounds and sells permanent Elixirs of Vitality (+10 Max HP).
+  - **Fountain of Purity**: Clicking or interacting with the town fountain instantly cleanses wounds and restores all Health & Mana.
+  - **Cathedral Entrance**: Pointed gothic archway on the north-east hill leading down into Cathedral Level 1.
+  - **Town Portal Pad**: Mystical stone circle in Tristram center allowing return to the dungeon anchor.
+- **Enhanced Tristram Hub UI (`TristramHub.ts`)**:
+  - Added quick tab navigation between `[ Cain (Elder) ]`, `[ Griswold (Smith) ]`, and `[ Pepin (Healer) ]`.
+  - Added close `[X]` button at top-right, esc key dismissal, and bottom shortcut button to enter the Cathedral or step through the active portal.
+- **Bidirectional Level Transitions & State Persistence**:
+  - `switchLevel` preserves monsters, ground items, open doors, and fog of war across all levels, keeping cleared rooms and dropped items intact when teleporting to town and returning.
+  - Debounced tile-stepping triggers for stairs, cathedral entrance, and portals for fluid traversal via both WASD and mouse pathfinding.
+- **Automap Town Markers**:
+  - Added distinct visual indicators on the automap (`Automap.ts`) for Cathedral Entrance (crimson/gold arch), Town Portal (cyan oval), and friendly NPCs (gold dots).
+- **Procedural Town Pixel-Art (`AssetFactory.ts`)**:
+  - Added procedural canvas textures for grass tiles (`tile_floor_grass`), dirt paths (`tile_floor_dirt`), Deckard Cain (`prop_cain`), Griswold (`prop_griswold`), Pepin (`prop_pepin`), Town Fountain (`prop_fountain`), Cathedral Entrance (`prop_cathedral_entrance`), Oak Trees (`prop_tree`), and Ascent Stairs (`prop_stairs_up`).
+- **Unit Tests**:
+  - Added test suite coverage in `DungeonGenerator.test.ts` verifying Level 0 dimensions, player spawn walkability, landmark tile generation, and A* path connectivity between spawn and town landmarks.
+
+---
+
 ## [1.2.4] - 2026-09-30
 
 ### Added

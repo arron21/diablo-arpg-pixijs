@@ -33,12 +33,26 @@ export class FogOfWar {
     this.baseLightRadius = radius;
   }
 
+  public revealAll(): void {
+    for (let y = 0; y < this.height; y++) {
+      for (let x = 0; x < this.width; x++) {
+        this.visibility[y][x] = VisibilityState.VISIBLE;
+        this.lightIntensity[y][x] = 1.0;
+      }
+    }
+    this.graphics.clear();
+  }
+
   public update(
     dungeon: DungeonLevel,
     playerGx: number,
     playerGy: number,
     lightRadiusBonus: number = 0
   ): void {
+    if (dungeon.levelNumber === 0) {
+      this.revealAll();
+      return;
+    }
     const radius = this.baseLightRadius + lightRadiusBonus;
 
     // 1. Demote currently visible tiles to SHROUDED

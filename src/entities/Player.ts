@@ -358,11 +358,24 @@ export class Player extends Entity {
         break;
       case ActionState.DEAD:
         textureKey = `warrior_dead_dir${this.direction}`;
-        break;
     }
 
     if (AssetFactory.hasTexture(textureKey)) {
       this.sprite.texture = AssetFactory.getTexture(textureKey);
     }
+  }
+
+  public respawn(gx: number, gy: number): void {
+    this.gx = gx;
+    this.gy = gy;
+    this.currentPath = [];
+    this.targetEntity = null;
+    this.stats.currentHp = this.stats.maxHp;
+    this.stats.currentMana = this.stats.maxMana;
+    this.state = ActionState.IDLE;
+    this.direction = 0;
+    this.animFrame = 0;
+    this.updateScreenPosition();
+    this.updateSpriteTexture();
   }
 }
