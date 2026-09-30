@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.2] - 2026-09-30
+
+### Fixed
+- **Inventory Item Tooltip Hover Flicker**: Resolved an issue where item detail tooltips were positioned directly over the hovered item and cell. The tooltip container now has `eventMode = 'none'` and `interactiveChildren = false` to prevent mouse event interception.
+- **Side Popup Positioning**: Updated `showTooltip` in `InventoryView.ts` to calculate the item's true bounding box across multi-cell items (1x1, 1x2, 2x2, 2x3) and position the details popup strictly adjacent to the item (right or left), never overlapping the hovered item.
+- **Dynamic Tooltip Box Sizing**: Tooltip background box now dynamically expands to fit all stat lines, with quality-coded glowing borders (Gold for Unique, Blue for Magic, Bronze for Normal).
+
+---
+
 ## [1.2.1] - 2026-09-30
 
 ### Fixed

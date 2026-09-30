@@ -20,6 +20,7 @@ export class InventoryView {
   private paperdollContainer: Container;
   private goldText: Text;
   private tooltipContainer: Container;
+  private tooltipBg: Graphics;
   private tooltipText: Text;
 
   private readonly CELL_SIZE = 28;
@@ -95,20 +96,28 @@ export class InventoryView {
     this.goldText.y = 390;
     this.container.addChild(this.goldText);
 
-    // 5. Tooltip
+    // 5. Tooltip (eventMode = 'none' to never intercept mouse events or cause hover bugs)
     this.tooltipContainer = new Container();
     this.tooltipContainer.visible = false;
-    const ttBg = new Graphics();
-    ttBg.rect(0, 0, 160, 60);
-    ttBg.fill({ color: 0x050406, alpha: 0.95 });
-    ttBg.stroke({ color: 0x6e5f44, width: 1.5 });
-    this.tooltipContainer.addChild(ttBg);
+    this.tooltipContainer.eventMode = 'none';
+    this.tooltipContainer.interactiveChildren = false;
+
+    this.tooltipBg = new Graphics();
+    this.tooltipContainer.addChild(this.tooltipBg);
+
     this.tooltipText = new Text({
       text: '',
-      style: new TextStyle({ fontFamily: 'serif', fontSize: 10, fill: 0xffffff, wordWrap: true, wordWrapWidth: 150 })
+      style: new TextStyle({
+        fontFamily: 'serif',
+        fontSize: 11,
+        fill: 0xffffff,
+        wordWrap: true,
+        wordWrapWidth: 155,
+        lineHeight: 16
+      })
     });
-    this.tooltipText.x = 6;
-    this.tooltipText.y = 6;
+    this.tooltipText.x = 8;
+    this.tooltipText.y = 8;
     this.tooltipContainer.addChild(this.tooltipText);
     this.container.addChild(this.tooltipContainer);
 
@@ -174,7 +183,7 @@ export class InventoryView {
 
       slotBox.on('pointerover', () => {
         const item = this.player.equipment.getItem(s.slot);
-        if (item) this.showTooltip(item, s.x + 15, s.y + 35);
+        if (item) this.showTooltip(item, 15 + s.x, 35 + s.y, s.w * this.CELL_SIZE, s.h * this.CELL_SIZE);
       });
       slotBox.on('pointerout', () => this.hideTooltip());
 
@@ -201,7 +210,14 @@ export class InventoryView {
 
         cell.on('pointerover', () => {
           const item = this.player.inventory.getItemAt(c, r);
-          if (item) this.showTooltip(item, 30 + c * this.CELL_SIZE, 265 + r * this.CELL_SIZE);
+          if (item) {
+            const placed = this.player.inventory.getPlacedItem(item.id);
+            const w = (item.width || 1) * this.CELL_SIZE;
+            const h = (item.height || 1) * this.CELL_SIZE;
+            const originCol = placed ? placed.col : c;
+            const originRow = placed ? placed.row : r;
+            this.showTooltip(item, 30 + originCol * this.CELL_SIZE, 265 + originRow * this.CELL_SIZE, w, h);
+          }
         });
         cell.on('pointerout', () => this.hideTooltip());
 
@@ -304,7 +320,13 @@ export class InventoryView {
     }
   }
 
-  private showTooltip(item: Item, x: number, y: number): void {
+  private showTooltip(
+    item: Item,
+    itemX: number,
+    itemY: number,
+    itemW: number = this.CELL_SIZE,
+    itemH: number = this.CELL_SIZE
+  ): void {
     let text = `${item.name}\n`;
     if (item.type === ItemType.WEAPON) {
       text += `Damage: ${item.stats.minDamage}-${item.stats.maxDamage}\n`;
@@ -312,20 +334,83 @@ export class InventoryView {
     if (item.stats.armorClass) {
       text += `Armor: ${item.stats.armorClass}\n`;
     }
+    if (item.stats.toHit) {
+      text += `+${item.stats.toHit}% To-Hit\n`;
+    }
     if (item.stats.strength) {
       text += `+${item.stats.strength} Strength\n`;
     }
     if (item.stats.dexterity) {
       text += `+${item.stats.dexterity} Dexterity\n`;
     }
+    if (item.stats.vitality) {
+      text += `+${item.stats.vitality} Vitality\n`;
+    }
     if (item.stats.maxHp) {
       text += `+${item.stats.maxHp} Life\n`;
     }
+    if (item.stats.maxMana) {
+      text += `+${item.stats.maxMana} Mana\n`;
+    }
+    if (item.stats.lightRadius) {
+      text += `+${item.stats.lightRadius} Light Radius\n`;
+    }
+    if (item.stats.baseBlockChance) {
+      text += `Block: ${item.stats.baseBlockChance}%\n`;
+    }
     text += `Value: ${item.goldValue} Gold`;
 
+    // Quality color styling
+    let qualityBorder = 0x6e5f44;
+    let titleColor = 0xffffff;
+    if (item.quality === 'magic') {
+      qualityBorder = 0x388bfd;
+      titleColor = 0x82b4ff;
+    } else if (item.quality === 'unique') {
+      qualityBorder = 0xd4af37;
+      titleColor = 0xffdf66;
+    }
+
+    this.tooltipText.style.fill = titleColor;
     this.tooltipText.text = text;
-    this.tooltipContainer.x = Math.min(x, 160);
-    this.tooltipContainer.y = Math.min(y, 380);
+
+    // Dynamically size background box to fit content with padding
+    const ttW = Math.max(145, Math.ceil(this.tooltipText.width + 16));
+    const ttH = Math.ceil(this.tooltipText.height + 16);
+
+    this.tooltipBg.clear();
+    this.tooltipBg.rect(0, 0, ttW, ttH);
+    this.tooltipBg.fill({ color: 0x07060a, alpha: 0.96 });
+    this.tooltipBg.stroke({ color: qualityBorder, width: 1.5 });
+
+    // Position tooltip next to the item (never overlapping it)
+    const panelW = 340;
+    const panelH = 460;
+
+    // Try placing directly to the right of the item
+    let targetX = itemX + itemW + 10;
+    let targetY = itemY;
+
+    // If extending past the right edge of panel, place to the left of the item
+    if (targetX + ttW > panelW - 8) {
+      targetX = itemX - ttW - 10;
+    }
+
+    // If placing to the left also extends past the left edge, place above or below
+    if (targetX < 8) {
+      targetX = Math.max(8, Math.min(panelW - ttW - 8, itemX + (itemW - ttW) / 2));
+      if (itemY - ttH - 10 >= 30) {
+        targetY = itemY - ttH - 10; // above item
+      } else {
+        targetY = itemY + itemH + 10; // below item
+      }
+    }
+
+    // Clamp vertically inside panel
+    targetY = Math.max(10, Math.min(panelH - ttH - 10, targetY));
+
+    this.tooltipContainer.x = targetX;
+    this.tooltipContainer.y = targetY;
     this.tooltipContainer.visible = true;
   }
 
