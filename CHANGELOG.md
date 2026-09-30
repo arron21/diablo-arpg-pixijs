@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] - 2026-09-30
+
+### Added
+- **Official PixiJS Skills Suite**: Installed 26 specialized PixiJS skills (`.agents/skills/` and `skills-lock.json`) via `npx skills add https://github.com/pixijs/pixijs-skills`, providing specialized tool definitions for PixiJS v8 architecture, rendering, shaders, filters, blend modes, performance optimization, and particle containers.
+
+---
+
 ## [1.1.0] - 2026-09-30
 
 ### Added
