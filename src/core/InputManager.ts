@@ -40,6 +40,10 @@ export class InputManager {
     };
   }
 
+  public isKeyDown(code: string): boolean {
+    return this.keysDown.has(code);
+  }
+
   private setupListeners(): void {
     // Prevent context menu so right click works as skill trigger
     this.domElement.addEventListener('contextmenu', (e) => e.preventDefault());

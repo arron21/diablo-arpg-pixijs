@@ -150,13 +150,36 @@ async function bootstrap() {
     if (target && target instanceof Monster && target.state !== ActionState.DEAD) {
       resolvePlayerHitOnMonster(target);
     } else {
-      // Cleave check: hit any monster within 1.4 tiles in facing direction
+      // Cleave check: hit any monster within 1.45 tiles
+      let hitMonster = false;
       for (const m of monsters) {
         if (m.state !== ActionState.DEAD) {
           const dist = Math.hypot(m.gx - player.gx, m.gy - player.gy);
           if (dist <= 1.45) {
             resolvePlayerHitOnMonster(m);
+            hitMonster = true;
             break;
+          }
+        }
+      }
+
+      // If no monster was hit, check for breakable props (urns, sarcophagi) within melee reach
+      if (!hitMonster) {
+        for (const prop of dungeon.props.values()) {
+          if (!prop.isOpenedOrBroken) {
+            const dist = Math.hypot(prop.gx - player.gx, prop.gy - player.gy);
+            if (dist <= 1.5) {
+              prop.isOpenedOrBroken = true;
+              tilemapRenderer.updatePropBroken(prop);
+              sounds.play(prop.type === TileType.URN ? 'bone_clatter' : 'item_equip');
+              const drops = [
+                Math.random() < 0.5 ? AffixGenerator.createHealthPotion() : AffixGenerator.createGoldPile(75)
+              ];
+              for (const d of drops) {
+                groundItems.dropItem(d, prop.gx, prop.gy);
+              }
+              break;
+            }
           }
         }
       }
@@ -274,6 +297,7 @@ async function bootstrap() {
     if (code === 'KeyI') toggleInventory();
     if (code === 'KeyC') toggleCharacter();
     if (code === 'Tab') toggleAutomap();
+    if (code === 'KeyJ') performPlayerAttack();
     if (code === 'Escape') {
       inventoryView.close();
       characterSheet.close();
@@ -285,6 +309,59 @@ async function bootstrap() {
     if (code === 'Digit3') handleBeltUse(2);
     if (code === 'Digit4') handleBeltUse(3);
   });
+
+  function performPlayerAttack() {
+    if (player.state === ActionState.DEAD || player.state === ActionState.HIT_RECOVERY) {
+      return;
+    }
+    if (inventoryView.isVisible || characterSheet.isVisible || tristramHub.isVisible) {
+      return;
+    }
+
+    const worldPos = camera.screenToWorld(input.state.mouseScreen.x, input.state.mouseScreen.y);
+    const gridPos = screenToGrid(worldPos.x, worldPos.y);
+
+    let targetMonster: Monster | null = null;
+    let closestDist = 1.45;
+
+    // 1. Check if mouse is hovering over an alive monster in attack range
+    for (const m of monsters) {
+      if (m.state !== ActionState.DEAD) {
+        const mouseDist = Math.hypot(m.gx - gridPos.gx, m.gy - gridPos.gy);
+        const playerDist = Math.hypot(m.gx - player.gx, m.gy - player.gy);
+        if (mouseDist <= 1.2 && playerDist <= 1.45) {
+          targetMonster = m;
+          break;
+        }
+      }
+    }
+
+    // 2. If not hovering directly on a monster, find the closest monster within melee range
+    if (!targetMonster) {
+      for (const m of monsters) {
+        if (m.state !== ActionState.DEAD) {
+          const dist = Math.hypot(m.gx - player.gx, m.gy - player.gy);
+          if (dist <= closestDist) {
+            closestDist = dist;
+            targetMonster = m;
+          }
+        }
+      }
+    }
+
+    // 3. Face target or aim direction and trigger attack
+    if (targetMonster) {
+      player.setDirectionFromDelta(targetMonster.gx - player.gx, targetMonster.gy - player.gy);
+      player.triggerAttack(targetMonster);
+    } else {
+      const dx = gridPos.gx - player.gx;
+      const dy = gridPos.gy - player.gy;
+      if (Math.hypot(dx, dy) > 0.05) {
+        player.setDirectionFromDelta(dx, dy);
+      }
+      player.triggerAttack(null);
+    }
+  }
 
   function handleBeltUse(slotIdx: number) {
     const item = player.belt.getSlot(slotIdx);
@@ -554,8 +631,13 @@ async function bootstrap() {
   app.ticker.add((ticker) => {
     const deltaMs = ticker.deltaMS;
 
+    // Continuous attack while holding J key
+    if (input.isKeyDown('KeyJ')) {
+      performPlayerAttack();
+    }
+
     // Handle WASD keyboard movement
-    if (input.state.hasWasdMovement && !input.state.isShiftDown) {
+    if (player.state !== ActionState.ATTACK && input.state.hasWasdMovement && !input.state.isShiftDown && !input.isKeyDown('KeyJ')) {
       player.moveByWasd(input.state.moveAxisX, input.state.moveAxisY, deltaMs, dungeon);
     } else {
       player.update(deltaMs);

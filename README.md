@@ -51,6 +51,7 @@ A classic dark fantasy Action Role-Playing Game inspired by the 1996 masterpiece
 | :--- | :--- |
 | **Left Click** | Move to tile / Attack targeted monster / Interact with doors & chests |
 | **Shift + Left Click** | Attack in place (stand ground) in facing direction |
+| **J** | Attack / Swing weapon (hold for continuous melee attacks) |
 | **W, A, S, D** / Arrows | Optional direct keyboard movement |
 | **1, 2, 3, 4** | Drink Belt Potions or use Town Portal Scroll |
 | **I** | Toggle Inventory & Equipment Paperdoll |

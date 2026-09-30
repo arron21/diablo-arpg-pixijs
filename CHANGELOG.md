@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.4] - 2026-09-30
+
+### Added
+- **'J' Attack Hotkey**: Added keyboard attack binding on `J`. Pressing `J` performs a melee attack aiming towards the mouse cursor, targeting hovered enemies or the closest monster in melee reach.
+- **Continuous Attack on Hold**: Holding `J` down executes repeated swings through the game ticker loop, allowing continuous melee combat without rapid mouse clicking.
+- **Melee Cleave on Breakable Props**: Empty swings within 1.5 tiles of urns or sarcophagi automatically break them, dropping loot and playing shatter sounds.
+- **Controls Documentation**: Updated `README.md` controls table with the `J` attack key.
+
+---
+
 ## [1.2.3] - 2026-09-30
 
 ### Fixed
