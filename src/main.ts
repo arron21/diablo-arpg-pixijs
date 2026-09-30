@@ -35,7 +35,10 @@ async function bootstrap() {
     resolution: window.devicePixelRatio || 1,
     autoDensity: true
   });
+  app.canvas.tabIndex = 0;
+  app.canvas.style.outline = 'none';
   container.appendChild(app.canvas);
+  app.canvas.focus();
 
   // 2. Generate procedural textures
   AssetFactory.init();
@@ -221,7 +224,8 @@ async function bootstrap() {
   };
 
   const toggleAutomap = () => {
-    automap.toggle();
+    const isVisible = automap.toggle();
+    sounds.play(isVisible ? 'portal_open' : 'item_equip');
   };
 
   const hud = new GothicHUD(

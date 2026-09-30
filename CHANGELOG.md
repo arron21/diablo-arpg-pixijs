@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.1] - 2026-09-30
+
+### Fixed
+- **Tab Key Browser Interception**: Resolved an issue where pressing `Tab` to open the Automap allowed the browser to perform its default focus cycling behavior instead of toggling the map. Key event handlers in `InputManager.ts` now run in the capture phase and call `preventDefault()` and `stopPropagation()` on `Tab`, `Space`, and Arrow keys.
+- **Canvas Focus Maintenance**: Added `tabIndex = 0` and pointer-down focus handler to the game canvas to ensure seamless keyboard focus.
+- **Automap Rendering Optimization**: Batched all wireframe wall and door drawing routines in `Automap.ts`, eliminating thousands of redundant stroke passes per frame and brightening map lines for high visibility.
+- **Automap Audio Feedback**: Added sound effect trigger on opening and closing the automap.
+
+---
+
 ## [1.2.0] - 2026-09-30
 
 ### Added

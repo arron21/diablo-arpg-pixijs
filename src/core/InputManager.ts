@@ -44,6 +44,11 @@ export class InputManager {
     // Prevent context menu so right click works as skill trigger
     this.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
 
+    // Ensure focus on click
+    this.domElement.addEventListener('pointerdown', () => {
+      this.domElement.focus();
+    });
+
     // Mouse tracking
     window.addEventListener('mousemove', (e) => {
       const rect = this.domElement.getBoundingClientRect();
@@ -69,23 +74,50 @@ export class InputManager {
       this.state.isShiftDown = e.shiftKey;
     });
 
-    // Keyboard tracking
-    window.addEventListener('keydown', (e) => {
-      this.keysDown.add(e.code);
-      this.state.isShiftDown = e.shiftKey;
-      this.updateMovementAxis();
+    // Keyboard tracking with capture phase to prevent browser default behaviors (Tab focus cycling, etc.)
+    window.addEventListener(
+      'keydown',
+      (e) => {
+        // Prevent default on game hotkeys: Tab, Space, Arrow keys
+        if (
+          e.key === 'Tab' ||
+          e.code === 'Tab' ||
+          e.code === 'Space' ||
+          e.code === 'ArrowUp' ||
+          e.code === 'ArrowDown' ||
+          e.code === 'ArrowLeft' ||
+          e.code === 'ArrowRight'
+        ) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
 
-      // Trigger hotkeys
-      for (const listener of this.keyListeners) {
-        listener(e.code);
-      }
-    });
+        this.keysDown.add(e.code);
+        this.state.isShiftDown = e.shiftKey;
+        this.updateMovementAxis();
 
-    window.addEventListener('keyup', (e) => {
-      this.keysDown.delete(e.code);
-      this.state.isShiftDown = e.shiftKey;
-      this.updateMovementAxis();
-    });
+        // Trigger hotkeys (normalize Tab)
+        const hotkey = (e.key === 'Tab' || e.code === 'Tab') ? 'Tab' : e.code;
+        for (const listener of this.keyListeners) {
+          listener(hotkey);
+        }
+      },
+      { capture: true }
+    );
+
+    window.addEventListener(
+      'keyup',
+      (e) => {
+        if (e.key === 'Tab' || e.code === 'Tab') {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        this.keysDown.delete(e.code);
+        this.state.isShiftDown = e.shiftKey;
+        this.updateMovementAxis();
+      },
+      { capture: true }
+    );
   }
 
   private updateMovementAxis(): void {
