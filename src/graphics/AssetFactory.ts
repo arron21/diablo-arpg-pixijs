@@ -10,7 +10,7 @@ export class AssetFactory {
   public static getTexture(key: string): Texture {
     const tex = this.textures.get(key);
     if (!tex) {
-      throw new Error(`Texture '${key}' not found in AssetFactory.`);
+      return Texture.EMPTY;
     }
     return tex;
   }

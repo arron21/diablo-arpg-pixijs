@@ -10,6 +10,7 @@ export interface GroundItem {
   container: Container;
   sprite: Sprite;
   nameLabel: Text;
+  canPickupAfter?: number;
 }
 
 export class GroundItemManager {
@@ -20,7 +21,7 @@ export class GroundItemManager {
     this.container = container;
   }
 
-  public dropItem(item: Item, gx: number, gy: number): void {
+  public dropItem(item: Item, gx: number, gy: number, pickupCooldownMs: number = 0): GroundItem {
     const itemContainer = new Container();
     const screenPos = gridToScreen(gx, gy);
 
@@ -48,21 +49,33 @@ export class GroundItemManager {
 
     this.container.addChild(itemContainer);
 
-    this.items.push({
+    const groundItem: GroundItem = {
       item,
       gx,
       gy,
       container: itemContainer,
       sprite,
-      nameLabel
-    });
+      nameLabel,
+      canPickupAfter: pickupCooldownMs > 0 ? Date.now() + pickupCooldownMs : 0
+    };
+
+    this.items.push(groundItem);
+    return groundItem;
   }
 
-  public getItemsNear(gx: number, gy: number, radius: number = 1.2): GroundItem[] {
+  public getItemsNear(gx: number, gy: number, radius: number = 1.2, ignoreCooldown: boolean = false): GroundItem[] {
+    const now = Date.now();
     return this.items.filter(groundItem => {
+      if (!ignoreCooldown && groundItem.canPickupAfter && groundItem.canPickupAfter > now) {
+        return false;
+      }
       const dist = Math.hypot(groundItem.gx - gx, groundItem.gy - gy);
       return dist <= radius;
     });
+  }
+
+  public getAllItems(): GroundItem[] {
+    return this.items;
   }
 
   public removeItem(groundItem: GroundItem): void {

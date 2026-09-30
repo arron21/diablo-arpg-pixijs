@@ -186,17 +186,25 @@ export class Player extends Entity {
     this.updateSpriteTexture();
   }
 
+  public heal(amount: number): void {
+    this.stats.currentHp = Math.min(this.stats.maxHp, this.stats.currentHp + amount);
+  }
+
+  public restoreMana(amount: number): void {
+    this.stats.currentMana = Math.min(this.stats.maxMana, this.stats.currentMana + amount);
+  }
+
   public useBeltSlot(index: number): boolean {
     const item = this.belt.useSlot(index);
     if (!item) return false;
 
     if (item.stats.maxHp) {
-      this.stats.currentHp = Math.min(this.stats.maxHp, this.stats.currentHp + item.stats.maxHp);
+      this.heal(item.stats.maxHp);
       this.onSoundTrigger?.('potion_gulp');
       return true;
     }
     if (item.stats.maxMana) {
-      this.stats.currentMana = Math.min(this.stats.maxMana, this.stats.currentMana + item.stats.maxMana);
+      this.restoreMana(item.stats.maxMana);
       this.onSoundTrigger?.('potion_gulp');
       return true;
     }

@@ -55,4 +55,25 @@ describe('InventoryGrid', () => {
     expect(grid.spendGold(1500)).toBe(true);
     expect(grid.getTotalGold()).toBe(4000);
   });
+
+  it('should support removing and swapping items in the inventory grid', () => {
+    const grid = new InventoryGrid();
+    const swordA = AffixGenerator.createBroadsword(); // 2x2
+    const swordB = AffixGenerator.createBroadsword(); // 2x2
+
+    // Place sword A
+    expect(grid.placeItem(swordA, 0, 0)).toBe(true);
+    expect(grid.getItemAt(0, 0)?.id).toBe(swordA.id);
+
+    // Can swap at (0, 0) by ignoring swordA
+    expect(grid.canPlace(swordB, 0, 0, swordA)).toBe(true);
+
+    // Remove sword A and place sword B
+    const removed = grid.removeItem(swordA.id);
+    expect(removed?.id).toBe(swordA.id);
+    expect(grid.getItemAt(0, 0)).toBeNull();
+
+    expect(grid.placeItem(swordB, 0, 0)).toBe(true);
+    expect(grid.getItemAt(0, 0)?.id).toBe(swordB.id);
+  });
 });

@@ -110,14 +110,30 @@ export class CharacterSheetView {
     this.refresh();
   }
 
-  public toggle(): boolean {
-    this.isVisible = !this.isVisible;
-    this.container.visible = this.isVisible;
-    if (this.isVisible) {
+  public open(): void {
+    if (!this.isVisible) {
+      this.isVisible = true;
+      this.container.visible = true;
       this.refresh();
       this.onSound?.('item_equip');
     }
-    return this.isVisible;
+  }
+
+  public close(): void {
+    if (this.isVisible) {
+      this.isVisible = false;
+      this.container.visible = false;
+    }
+  }
+
+  public toggle(): boolean {
+    if (this.isVisible) {
+      this.close();
+      return false;
+    } else {
+      this.open();
+      return true;
+    }
   }
 
   public refresh(): void {

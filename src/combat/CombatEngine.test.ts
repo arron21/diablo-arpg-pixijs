@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { CombatEngine, CombatStats } from './CombatEngine';
 
 describe('CombatEngine', () => {
@@ -74,8 +74,10 @@ describe('CombatEngine', () => {
       maxDamage: 25
     };
 
+    vi.spyOn(Math, 'random').mockReturnValue(0.1); // Rolls 10%, well below 95% cap
     const res = CombatEngine.resolveAttack(hitStatsHigh, { ...targetWith100HP, hasShield: false });
     expect(res.isHit).toBe(true);
     expect(res.triggersHitRecovery).toBe(true);
+    vi.restoreAllMocks();
   });
 });

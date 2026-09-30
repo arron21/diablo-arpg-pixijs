@@ -11,6 +11,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.3] - 2026-09-30
+
+### Fixed
+- **Held Item Mouse Event Passthrough**: Added `eventMode = 'none'` and `interactiveChildren = false` to `heldItemSprite` in `InventoryView.ts`. Because the held item follows the cursor, PixiJS's default hit-testing intercepted subsequent clicks, preventing underlying inventory grid cells and paperdoll equipment slots from receiving drop events.
+- **Dropping Items on Ground**: Updated world click detection in `main.ts` so clicking outside the inventory panel while holding an item drops it onto the dungeon floor at the player's feet or clicked tile, accompanied by floating text feedback (`Dropped <Item>`) and sound effects.
+- **Immediate Auto-Pickup Prevention**: Added a 3-second pickup cooldown (`canPickupAfter`) to player-dropped items in `GroundItemManager.ts`, preventing the continuous proximity auto-pickup loop from vacuuming dropped items back up instantly while the player is standing over them.
+- **Paperdoll Re-equipping and Swapping**: Isolated paperdoll child sprites (`spr.eventMode = 'none'`) and defined explicit rectangular hit areas (`Rectangle(0, 0, w, h)`) on all paperdoll slots, enabling seamless re-equipping and swapping of helms, armor, weapons, shields, amulets, and rings.
+- **Held Item Retention on Modal Close**: Added `returnHeldItem()` and integrated clean `close()` lifecycles for `InventoryView` and `CharacterSheetView`. Closing the inventory via `Escape`, `I`, `[X]`, or opening the character sheet returns held items to the bag or drops them at the player's feet if full.
+- **Flaky Combat Test**: Mocked `Math.random()` with `vi.spyOn` in `CombatEngine.test.ts` to ensure 100% deterministic test suite execution.
+
+### Added
+- **Multi-Cell Grid Swap Ergonomics**: Clicking anywhere on an occupied multi-cell item in the inventory bag now tests placement at the target item's origin, enabling effortless item swapping without requiring precise top-left cell clicking.
+- **Right-Click Quick Actions**: Added right-click support in `InventoryView.ts` to drink health/mana potions directly from the bag, quick-equip items from bag to paperdoll, and quick-unequip items from paperdoll to bag.
+- **Manual Ground Item Click Pickup**: Clicking on or near a ground item now directly picks it up if in range or pathfinds to it and clears cooldown.
+- **Unit Test Coverage**: Created `src/items/EquipmentAndGround.test.ts` verifying `EquipmentDoll` slot restrictions/swaps and `GroundItemManager` cooldown filtering.
+
+---
+
 ## [1.2.2] - 2026-09-30
 
 ### Fixed

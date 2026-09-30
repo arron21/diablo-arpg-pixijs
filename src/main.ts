@@ -215,12 +215,12 @@ async function bootstrap() {
 
   const toggleInventory = () => {
     inventoryView.toggle();
-    if (inventoryView.isVisible) characterSheet.container.visible = false;
+    if (inventoryView.isVisible) characterSheet.close();
   };
 
   const toggleCharacter = () => {
     characterSheet.toggle();
-    if (characterSheet.isVisible) inventoryView.container.visible = false;
+    if (characterSheet.isVisible) inventoryView.close();
   };
 
   const toggleAutomap = () => {
@@ -240,6 +240,16 @@ async function bootstrap() {
   inventoryView = new InventoryView(player, (k) => sounds.play(k));
   inventoryView.container.x = app.screen.width / 2 - 170;
   inventoryView.container.y = app.screen.height / 2 - 230;
+  inventoryView.onDropItem = (item) => {
+    groundItems.dropItem(item, Math.floor(player.gx), Math.floor(player.gy), 3000);
+    sounds.play(item.type === ItemType.GOLD ? 'gold_pickup' : 'item_equip');
+    floatingTexts.spawn(
+      `Dropped ${item.name}`,
+      player.spriteContainer.x,
+      player.spriteContainer.y - 30,
+      item.quality === 'unique' ? 0xd4af37 : (item.quality === 'magic' ? 0x59a2ff : 0xcccccc)
+    );
+  };
   layers.modalLayer.addChild(inventoryView.container);
 
   characterSheet = new CharacterSheetView(player, (k) => sounds.play(k));
@@ -265,8 +275,8 @@ async function bootstrap() {
     if (code === 'KeyC') toggleCharacter();
     if (code === 'Tab') toggleAutomap();
     if (code === 'Escape') {
-      inventoryView.container.visible = false;
-      characterSheet.container.visible = false;
+      inventoryView.close();
+      characterSheet.close();
       tristramHub.close();
     }
     // Belt hotkeys 1, 2, 3, 4
@@ -290,6 +300,8 @@ async function bootstrap() {
   }
 
   function handleDungeonDescent() {
+    inventoryView.close();
+    characterSheet.close();
     currentLevelNumber++;
     sounds.play('footstep');
     floatingTexts.spawn(
@@ -320,8 +332,76 @@ async function bootstrap() {
   let lastClickTime = 0;
   window.addEventListener('mousedown', (e) => {
     if (e.button !== 0) return; // Only primary click
-    if (inventoryView.isVisible || characterSheet.isVisible || tristramHub.isVisible) {
-      return; // Handled by modals
+
+    // Ignore clicks on bottom HUD bar
+    if (e.clientY >= app.screen.height - 90) {
+      return;
+    }
+
+    if (tristramHub.isVisible) {
+      const hubX = tristramHub.container.x;
+      const hubY = tristramHub.container.y;
+      if (e.clientX >= hubX && e.clientX <= hubX + 480 && e.clientY >= hubY && e.clientY <= hubY + 400) {
+        return;
+      }
+    }
+
+    if (characterSheet.isVisible) {
+      const charX = characterSheet.container.x;
+      const charY = characterSheet.container.y;
+      if (e.clientX >= charX && e.clientX <= charX + 300 && e.clientY >= charY && e.clientY <= charY + 420) {
+        return;
+      }
+    }
+
+    if (inventoryView.isVisible) {
+      const invX = inventoryView.container.x;
+      const invY = inventoryView.container.y;
+      const insideInventory = (
+        e.clientX >= invX &&
+        e.clientX <= invX + 340 &&
+        e.clientY >= invY &&
+        e.clientY <= invY + 460
+      );
+
+      if (insideInventory) {
+        return; // Pixi inventory event listeners handle clicks inside
+      }
+
+      // Click is OUTSIDE the inventory window!
+      // If holding an item, drop it on the ground at feet / clicked location!
+      if (inventoryView.heldItem) {
+        const itemToDrop = inventoryView.heldItem;
+        inventoryView.heldItem = null;
+        inventoryView.refresh();
+
+        const worldPos = camera.screenToWorld(e.clientX, e.clientY);
+        const gridPos = screenToGrid(worldPos.x, worldPos.y);
+
+        const dist = Math.hypot(gridPos.gx - player.gx, gridPos.gy - player.gy);
+        let dropGx = Math.floor(player.gx);
+        let dropGy = Math.floor(player.gy);
+
+        if (
+          dist <= 3.5 &&
+          gridPos.gx >= 0 && gridPos.gx < dungeon.width &&
+          gridPos.gy >= 0 && gridPos.gy < dungeon.height &&
+          dungeon.tiles[gridPos.gy][gridPos.gx] === TileType.FLOOR
+        ) {
+          dropGx = gridPos.gx;
+          dropGy = gridPos.gy;
+        }
+
+        groundItems.dropItem(itemToDrop, dropGx, dropGy, 3000);
+        sounds.play(itemToDrop.type === ItemType.GOLD ? 'gold_pickup' : 'item_equip');
+        floatingTexts.spawn(
+          `Dropped ${itemToDrop.name}`,
+          player.spriteContainer.x,
+          player.spriteContainer.y - 30,
+          itemToDrop.quality === 'unique' ? 0xd4af37 : (itemToDrop.quality === 'magic' ? 0x59a2ff : 0xcccccc)
+        );
+        return;
+      }
     }
 
     const now = Date.now();
@@ -330,6 +410,38 @@ async function bootstrap() {
 
     const worldPos = camera.screenToWorld(e.clientX, e.clientY);
     const gridPos = screenToGrid(worldPos.x, worldPos.y);
+
+    // 0. Check if clicking on or near a ground item to pick it up manually
+    const groundItemNearClick = groundItems.getItemsNear(gridPos.gx, gridPos.gy, 0.9, true)[0];
+    if (groundItemNearClick) {
+      const distToPlayer = Math.hypot(groundItemNearClick.gx - player.gx, groundItemNearClick.gy - player.gy);
+      if (distToPlayer <= 1.4) {
+        if (player.inventory.autoPlace(groundItemNearClick.item)) {
+          groundItems.removeItem(groundItemNearClick);
+          sounds.play(groundItemNearClick.item.type === ItemType.GOLD ? 'gold_pickup' : 'item_equip');
+          floatingTexts.spawn(
+            `+${groundItemNearClick.item.name}`,
+            player.spriteContainer.x,
+            player.spriteContainer.y - 25,
+            groundItemNearClick.item.quality === 'unique' ? 0xd4af37 : 0xffffff
+          );
+          inventoryView.refresh();
+          return;
+        }
+      } else {
+        // Pathfind directly to ground item and clear pickup cooldown so arriving picks it up
+        groundItemNearClick.canPickupAfter = 0;
+        player.targetEntity = null;
+        player.currentPath = Pathfinding.findPath(
+          dungeon,
+          Math.floor(player.gx),
+          Math.floor(player.gy),
+          Math.floor(groundItemNearClick.gx),
+          Math.floor(groundItemNearClick.gy)
+        );
+        return;
+      }
+    }
 
     // 1. Check if clicking directly on a monster
     for (const m of monsters) {
