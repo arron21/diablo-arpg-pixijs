@@ -6,6 +6,9 @@ A classic dark fantasy Action Role-Playing Game inspired by the 1996 masterpiece
 ![PixiJS](https://img.shields.io/badge/PixiJS-8.21-e91e63?logo=pixijs)
 ![Vite](https://img.shields.io/badge/Vite-6.2-646cff?logo=vite)
 ![Vitest](https://img.shields.io/badge/Vitest-3.0-green?logo=vitest)
+[![Deploy to GitHub Pages](https://github.com/arron21/diablo-arpg-pixijs/actions/workflows/deploy.yml/badge.svg)](https://github.com/arron21/diablo-arpg-pixijs/actions/workflows/deploy.yml)
+
+### 🕹️ [Play Live in Browser](https://arron21.github.io/diablo-arpg-pixijs/)
 
 ---
 
